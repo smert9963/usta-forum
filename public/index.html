@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MB Usta Forum</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Segoe UI", Arial, sans-serif; }
+    body { background: linear-gradient(135deg, #050b16 0%, #0b1220 45%, #111827 100%); color: #f3f4f6; min-height: 100vh; }
+    .hidden { display: none !important; }
+
+    .auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 30px; }
+    .auth-container { width: 100%; max-width: 1100px; position: relative; }
+    .main-title { font-size: 40px; font-weight: 700; margin-bottom: 10px; color: #f8fafc; }
+    .main-subtitle { color: #94a3b8; margin-bottom: 24px; font-size: 15px; }
+
+    .auth-card {
+      background: rgba(20, 29, 45, 0.92);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.28);
+      position: relative;
+      min-height: 360px;
+    }
+
+    .auth-row { display: flex; gap: 24px; flex-wrap: wrap; }
+    .auth-col { flex: 1; min-width: 300px; }
+    .section-title { font-size: 24px; font-weight: 600; margin-bottom: 16px; color: #ffffff; }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 13px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      background: #0b1220;
+      color: #f8fafc;
+      font-size: 14px;
+      margin-bottom: 12px;
+      outline: none;
+      transition: 0.2s ease;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      border-color: #60a5fa;
+      box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15);
+    }
+
+    textarea { min-height: 110px; resize: vertical; }
+
+    button {
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+      color: white;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: 0.2s ease;
+      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.25);
+    }
+
+    button:hover { transform: translateY(-1px); background: linear-gradient(135deg, #1e40af, #1d4ed8); }
+
+    .secondary-btn { background: linear-gradient(135deg, #334155, #475569); box-shadow: none; margin-top: 10px; }
+    .secondary-btn:hover { background: linear-gradient(135deg, #475569, #64748b); }
+
+    .danger-btn { background: linear-gradient(135deg, #991b1b, #dc2626); box-shadow: none; }
+    .danger-btn:hover { background: linear-gradient(135deg, #b91c1c, #ef4444); }
+
+    .solve-btn { background: linear-gradient(135deg, #0f766e, #14b8a6); box-shadow: none; margin-top: 12px; }
+    .solve-btn:hover { background: linear-gradient(135deg, #0d9488, #2dd4bf); }
+
+    .admin-btn { background: linear-gradient(135deg, #7c3aed, #8b5cf6); box-shadow: none; margin-top: 10px; }
+    .admin-btn:hover { background: linear-gradient(135deg, #6d28d9, #7c3aed); }
+
+    .delete-btn { background: linear-gradient(135deg, #991b1b, #dc2626); box-shadow: none; margin-top: 10px; }
+    .delete-btn:hover { background: linear-gradient(135deg, #b91c1c, #ef4444); }
+
+    .solved-badge {
+      display: inline-block;
+      margin-bottom: 10px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(20, 184, 166, 0.18);
+      border: 1px solid rgba(45, 212, 191, 0.35);
+      color: #5eead4;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+    }
+
+    .password-wrapper { position: relative; margin-bottom: 12px; }
+    .password-wrapper input { margin-bottom: 0; padding-right: 46px; }
+
+    .eye-btn {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 0;
+      box-shadow: none;
+    }
+
+    .eye-btn:hover { color: #ffffff; background: transparent; transform: translateY(-50%); }
+
+    .form-note { font-size: 12px; color: #94a3b8; margin-top: -4px; margin-bottom: 12px; }
+    .message { margin-top: 14px; font-size: 14px; color: #fbbf24; }
+
+    .auth-logo-small {
+      position: absolute;
+      right: 24px;
+      bottom: 20px;
+      width: 64px;
+      opacity: 0.9;
+      pointer-events: none;
+    }
+
+    .forum-layout { display: grid; grid-template-columns: 300px 1fr 300px; min-height: 100vh; }
+    .left-panel, .right-panel { background: #020617; padding: 24px; }
+    .left-panel { border-right: 1px solid #1e293b; }
+    .right-panel { border-left: 1px solid #1e293b; }
+    .main-panel { padding: 28px; overflow-y: auto; background: rgba(8, 15, 29, 0.55); }
+
+    .logo { font-size: 22px; font-weight: 700; margin-bottom: 24px; color: #60a5fa; }
+    .menu-title { margin-top: 16px; margin-bottom: 12px; font-size: 15px; color: #94a3b8; }
+
+    .menu-button {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      background: #1e293b;
+      color: white;
+      cursor: pointer;
+      box-shadow: none;
+    }
+
+    .menu-button:hover { background: #2563eb; }
+    .menu-button.active { background: linear-gradient(135deg, #0f766e, #14b8a6); }
+
+    .panel-card {
+      background: rgba(20, 29, 45, 0.88);
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 18px;
+    }
+
+    .welcome-text {
+      font-size: 18px;
+      font-weight: 600;
+      color: #e2e8f0;
+      margin-bottom: 14px;
+      line-height: 1.5;
+      white-space: pre-line;
+    }
+
+    .post-card {
+      background: linear-gradient(180deg, rgba(8, 15, 29, 0.95), rgba(16, 24, 39, 0.95));
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 18px;
+    }
+
+    .post-title { font-size: 20px; font-weight: 700; margin-bottom: 10px; color: #f8fafc; }
+    .post-meta { font-size: 14px; color: #93c5fd; margin-bottom: 10px; }
+    .post-description { font-size: 15px; line-height: 1.7; color: #e5e7eb; margin-bottom: 14px; }
+
+    .post-image {
+      width: 100%;
+      max-width: 360px;
+      border-radius: 14px;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      margin-bottom: 14px;
+      display: block;
+      cursor: pointer;
+    }
+
+    .comments-box { margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(148, 163, 184, 0.16); }
+    .comments-title { font-size: 16px; font-weight: 600; margin-bottom: 10px; color: #ffffff; }
+
+    .comment-item {
+      background: rgba(31, 41, 55, 0.8);
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+
+    .comment-author { font-size: 13px; font-weight: 600; color: #60a5fa; margin-bottom: 6px; }
+    .comment-text { font-size: 14px; line-height: 1.6; color: #f3f4f6; }
+    .empty-state { font-style: italic; color: #94a3b8; margin-top: 8px; }
+
+    .file-label { display: block; color: #cbd5e1; font-size: 14px; margin-bottom: 8px; }
+    #categoryTitle { font-size: 18px; margin-bottom: 16px; color: #ffffff; }
+    .search-box { margin-bottom: 0; }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .stat-card {
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      border-radius: 16px;
+      padding: 18px;
+    }
+
+    .stat-label {
+      color: #94a3b8;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+
+    .filter-row {
+      display: grid;
+      grid-template-columns: 1fr 220px;
+      gap: 12px;
+      margin-bottom: 18px;
+      align-items: start;
+    }
+
+    .recent-solved-item {
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+
+    .recent-solved-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #e2e8f0;
+      margin-bottom: 4px;
+    }
+
+    .recent-solved-meta {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    .image-modal {
+      display: none;
+      position: fixed;
+      z-index: 9999;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.88);
+      justify-content: center;
+      align-items: center;
+      padding: 30px;
+    }
+
+    .image-modal img {
+      max-width: 90%;
+      max-height: 90%;
+      border-radius: 14px;
+      border: 2px solid rgba(255,255,255,0.12);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.55);
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      font-size: 34px;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #adminPanel {
+      margin-top: 16px;
+    }
+
+    #adminUsersList, #adminPostsList {
+      margin-top: 10px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .admin-item {
+      background: rgba(31, 41, 55, 0.8);
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .admin-item strong {
+      color: #e2e8f0;
+    }
+
+    @media (max-width: 1100px) {
+      .forum-layout { grid-template-columns: 1fr; }
+      .left-panel, .right-panel { border: none; }
+      .auth-logo-small { width: 48px; right: 16px; bottom: 16px; }
+    }
+
+    @media (max-width: 768px) {
+      .auth-page { padding: 16px; }
+      .main-title { font-size: 30px; }
+      .main-panel { padding: 18px; }
+      .auth-card { min-height: auto; padding-bottom: 70px; }
+
+      .stats-grid { grid-template-columns: 1fr; }
+      .filter-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="authSection" class="auth-page">
+    <div class="auth-container">
+      <h1 class="main-title">MB Usta Forum</h1>
+      <p class="main-subtitle">Mercedes araçları için teknik arıza paylaşım ve çözüm platformu</p>
+
+      <div class="auth-card">
+        <div class="auth-row">
+          <div class="auth-col">
+            <h2 class="section-title">Kayıt Ol</h2>
+
+            <input id="fullName" placeholder="Ad Soyad">
+            <input id="username" placeholder="Kullanıcı Adı">
+            <p class="form-note">Benzersiz bir kullanıcı adı seçmelisin.</p>
+
+            <div class="password-wrapper">
+              <input id="password" type="password" placeholder="Şifre">
+              <button type="button" class="eye-btn" onclick="toggleRegisterPassword()" title="Şifreyi göster/gizle">👁</button>
+            </div>
+
+            <input id="service" placeholder="Çalıştığı Bayi / Servis">
+            <input id="city" placeholder="Şehir">
+
+            <button onclick="registerUser()">Kayıt Ol</button>
+          </div>
+
+          <div class="auth-col">
+            <h2 class="section-title">Giriş Yap</h2>
+
+            <input id="loginUsername" placeholder="Kullanıcı Adı">
+
+            <div class="password-wrapper">
+              <input id="loginPassword" type="password" placeholder="Şifre">
+              <button type="button" class="eye-btn" onclick="toggleLoginPassword()" title="Şifreyi göster/gizle">👁</button>
+            </div>
+
+            <button onclick="loginUser()">Giriş Yap</button>
+          </div>
+        </div>
+
+        <img
+          class="auth-logo-small"
+          src="https://upload.wikimedia.org/wikipedia/commons/9/90/Mercedes-Logo.svg"
+          alt="Mercedes-Benz Logo"
+        >
+
+        <p id="authMessage" class="message"></p>
+      </div>
+    </div>
+  </div>
+
+  <div id="forumSection" class="forum-layout hidden">
+    <div class="left-panel">
+      <div class="logo">MB Usta Forum</div>
+
+      <div class="menu-title">Kategori</div>
+      <button id="btnMekanik" class="menu-button" onclick="showCategory('Mekanik')">Mekanik</button>
+      <button id="btnElektrik" class="menu-button" onclick="showCategory('Elektrik')">Elektrik</button>
+
+      <div class="menu-title">Yeni Arıza</div>
+
+      <select id="vehicle">
+        <option>Actros</option>
+        <option>Arocs</option>
+        <option>Atego</option>
+        <option>Axor</option>
+      </select>
+
+      <input id="title" placeholder="Arıza başlığı">
+      <textarea id="description" placeholder="Arıza açıklaması"></textarea>
+
+      <label class="file-label">Fotoğraf Yükle</label>
+      <input id="image" type="file" accept="image/*">
+
+      <button onclick="addPost()">Arıza Gönder</button>
+    </div>
+
+    <div class="main-panel">
+      <h2 id="categoryTitle">Kategori seç</h2>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Toplam Usta</div>
+          <div id="statUsers" class="stat-value">0</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">Toplam Arıza</div>
+          <div id="statPosts" class="stat-value">0</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">Çözülen Arıza</div>
+          <div id="statSolved" class="stat-value">0</div>
+        </div>
+      </div>
+
+      <div class="filter-row">
+        <input
+          id="searchInput"
+          class="search-box"
+          placeholder="Arıza ara... (örn: Actros AdBlue)"
+          oninput="getPosts()"
+        >
+
+        <select id="vehicleFilter" onchange="getPosts()">
+          <option value="">Tüm Araçlar</option>
+          <option value="Actros">Actros</option>
+          <option value="Arocs">Arocs</option>
+          <option value="Atego">Atego</option>
+          <option value="Axor">Axor</option>
+        </select>
+      </div>
+
+      <div class="panel-card">
+        <h3 style="margin-bottom:12px; color:#fff;">Son Çözülen Arızalar</h3>
+        <div id="recentSolvedList"></div>
+      </div>
+
+      <div id="posts"></div>
+    </div>
+
+    <div class="right-panel">
+      <div class="panel-card">
+        <div id="welcomeText" class="welcome-text"></div>
+        <button class="danger-btn" onclick="logoutUser()">Çıkış Yap</button>
+      </div>
+
+      <div id="adminPanel" class="panel-card hidden">
+        <h3 class="section-title" style="font-size:18px;">Admin Paneli</h3>
+
+        <button class="admin-btn" onclick="loadAdminUsers()">Kullanıcıları Yükle</button>
+        <div id="adminUsersList"></div>
+
+        <button class="admin-btn" onclick="loadAdminPosts()" style="margin-top:14px;">Postları Yükle</button>
+        <div id="adminPostsList"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="imageModal" class="image-modal" onclick="closeImageModal()">
+    <span class="close-btn">&times;</span>
+    <img id="modalImage" src="" alt="Büyütülmüş Fotoğraf">
+  </div>
+
+  <script>
+    let currentCategory = "";
+    let currentUser = null;
+
+    function toggleRegisterPassword() {
+      const pass = document.getElementById("password");
+      pass.type = pass.type === "password" ? "text" : "password";
+    }
+
+    function toggleLoginPassword() {
+      const pass = document.getElementById("loginPassword");
+      pass.type = pass.type === "password" ? "text" : "password";
+    }
+
+    function openImageModal(src) {
+      document.getElementById("modalImage").src = src;
+      document.getElementById("imageModal").style.display = "flex";
+    }
+
+    function closeImageModal() {
+      document.getElementById("imageModal").style.display = "none";
+      document.getElementById("modalImage").src = "";
+    }
+
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        closeImageModal();
+      }
+    });
+
+    async function registerUser() {
+      const fullName = document.getElementById("fullName").value;
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
+      const service = document.getElementById("service").value;
+      const city = document.getElementById("city").value;
+
+      if (
+        fullName.trim() === "" ||
+        username.trim() === "" ||
+        password.trim() === "" ||
+        service.trim() === "" ||
+        city.trim() === ""
+      ) {
+        document.getElementById("authMessage").innerText = "Tüm alanları doldur.";
+        return;
+      }
+
+      const res = await fetch("/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullName, username, password, service, city })
+      });
+
+      const data = await res.json();
+      document.getElementById("authMessage").innerText = data.message;
+
+      if (data.success) {
+        document.getElementById("fullName").value = "";
+        document.getElementById("username").value = "";
+        document.getElementById("password").value = "";
+        document.getElementById("service").value = "";
+        document.getElementById("city").value = "";
+      }
+    }
+
+    async function loginUser() {
+      const username = document.getElementById("loginUsername").value;
+      const password = document.getElementById("loginPassword").value;
+
+      if (username.trim() === "" || password.trim() === "") {
+        document.getElementById("authMessage").innerText = "Kullanıcı adı ve şifre gir.";
+        return;
+      }
+
+      const res = await fetch("/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+      });
+
+      const data = await res.json();
+      document.getElementById("authMessage").innerText = data.message;
+
+      if (data.success) {
+        currentUser = data.user;
+        document.getElementById("authSection").classList.add("hidden");
+        document.getElementById("forumSection").classList.remove("hidden");
+        document.getElementById("welcomeText").innerText =
+          "Hoş geldin, " + data.user.fullName + "\n" + data.user.service;
+
+        if (currentUser.isAdmin) {
+          document.getElementById("adminPanel").classList.remove("hidden");
+        } else {
+          document.getElementById("adminPanel").classList.add("hidden");
+        }
+
+        await loadStats();
+      }
+    }
+
+    async function loadStats() {
+      try {
+        const res = await fetch("/stats");
+        const data = await res.json();
+
+        document.getElementById("statUsers").innerText = data.totalUsers ?? 0;
+        document.getElementById("statPosts").innerText = data.totalPosts ?? 0;
+        document.getElementById("statSolved").innerText = data.solvedPosts ?? 0;
+      } catch (error) {
+        document.getElementById("statUsers").innerText = "0";
+        document.getElementById("statPosts").innerText = "0";
+        document.getElementById("statSolved").innerText = "0";
+      }
+    }
+
+    function logoutUser() {
+      currentUser = null;
+      currentCategory = "";
+      document.getElementById("forumSection").classList.add("hidden");
+      document.getElementById("authSection").classList.remove("hidden");
+      document.getElementById("authMessage").innerText = "";
+      document.getElementById("posts").innerHTML = "";
+      document.getElementById("categoryTitle").innerText = "Kategori seç";
+      document.getElementById("searchInput").value = "";
+      document.getElementById("vehicleFilter").value = "";
+      document.getElementById("recentSolvedList").innerHTML = "";
+      document.getElementById("statUsers").innerText = "0";
+      document.getElementById("statPosts").innerText = "0";
+      document.getElementById("statSolved").innerText = "0";
+      document.getElementById("btnMekanik").classList.remove("active");
+      document.getElementById("btnElektrik").classList.remove("active");
+      document.getElementById("adminUsersList").innerHTML = "";
+      document.getElementById("adminPostsList").innerHTML = "";
+      document.getElementById("adminPanel").classList.add("hidden");
+    }
+
+    function showCategory(category) {
+      currentCategory = category;
+      document.getElementById("categoryTitle").innerText = category + " Arızaları";
+
+      document.getElementById("btnMekanik").classList.remove("active");
+      document.getElementById("btnElektrik").classList.remove("active");
+
+      if (category === "Mekanik") {
+        document.getElementById("btnMekanik").classList.add("active");
+      } else {
+        document.getElementById("btnElektrik").classList.add("active");
+      }
+
+      getPosts();
+    }
+
+    function showRecentSolved(posts) {
+      const solvedPosts = posts.filter(p => p.solved).slice(0, 5);
+
+      let html = "";
+
+      solvedPosts.forEach(post => {
+        html += `
+          <div class="recent-solved-item">
+            <div class="recent-solved-title">${post.vehicle} - ${post.title}</div>
+            <div class="recent-solved-meta">${post.authorName} - ${post.authorService}</div>
+          </div>
+        `;
+      });
+
+      if (html === "") {
+        html = `<p class="empty-state">Henüz çözülen arıza yok.</p>`;
+      }
+
+      document.getElementById("recentSolvedList").innerHTML = html;
+    }
+
+    async function markSolved(postId) {
+      const res = await fetch(`/solve/${postId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: currentUser.username })
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        alert(data.message);
+        return;
+      }
+
+      await loadStats();
+      getPosts();
+    }
+
+    async function getPosts() {
+      const res = await fetch("/posts");
+      const data = await res.json();
+
+      showRecentSolved(data);
+
+      const searchInput = document.getElementById("searchInput");
+      const vehicleFilter = document.getElementById("vehicleFilter");
+
+      const searchText = searchInput ? searchInput.value.toLowerCase().trim() : "";
+      const vehicleValue = vehicleFilter ? vehicleFilter.value : "";
+
+      let html = "";
+
+      data.forEach(post => {
+        const matchesCategory = post.category === currentCategory;
+
+        const vehicleText = (post.vehicle || "").toLowerCase();
+        const titleText = (post.title || "").toLowerCase();
+        const descriptionText = (post.description || "").toLowerCase();
+
+        const matchesSearch =
+          vehicleText.includes(searchText) ||
+          titleText.includes(searchText) ||
+          descriptionText.includes(searchText);
+
+        const matchesVehicle =
+          vehicleValue === "" ||
+          post.vehicle === vehicleValue;
+
+        if (matchesCategory && matchesSearch && matchesVehicle) {
+          let commentsHtml = "";
+
+          if (post.comments && post.comments.length > 0) {
+            post.comments.forEach(comment => {
+              commentsHtml += `
+                <div class="comment-item">
+                  <div class="comment-author">${comment.authorName} - ${comment.authorService}</div>
+                  <div class="comment-text">${comment.text}</div>
+                </div>
+              `;
+            });
+          } else {
+            commentsHtml = `<p class="empty-state">Henüz yorum yok.</p>`;
+          }
+
+          let imageHtml = "";
+          if (post.image) {
+            imageHtml = `<img class="post-image" src="${post.image}" alt="Arıza Fotoğrafı" onclick="openImageModal('${post.image}')">`;
+          }
+
+          let solvedHtml = "";
+          let solveButtonHtml = "";
+
+          if (post.solved) {
+            solvedHtml = `<div class="solved-badge">✔ ÇÖZÜLDÜ</div>`;
+          } else if (currentUser && currentUser.isAdmin) {
+            solveButtonHtml = `<button class="solve-btn" onclick="markSolved('${post._id}')">Çözüldü Olarak İşaretle</button>`;
+          }
+
+          html += `
+            <div class="post-card">
+              ${solvedHtml}
+              <h3 class="post-title">${post.vehicle} - ${post.title}</h3>
+              <p class="post-meta"><strong>Yazan:</strong> ${post.authorName} - ${post.authorService}</p>
+              <p class="post-description">${post.description}</p>
+              ${imageHtml}
+              ${solveButtonHtml}
+
+              <div class="comments-box">
+                <h4 class="comments-title">Yorumlar</h4>
+                ${commentsHtml}
+                <textarea id="comment-${post._id}" placeholder="Yorum yaz"></textarea>
+                <button class="secondary-btn" onclick="addComment('${post._id}')">Yorum Yap</button>
+              </div>
+            </div>
+          `;
+        }
+      });
+
+      if (html === "") {
+        html = `<p class="empty-state">Aramana uygun kayıt bulunamadı.</p>`;
+      }
+
+      document.getElementById("posts").innerHTML = html;
+    }
+
+    async function addPost() {
+      const vehicle = document.getElementById("vehicle").value;
+      const title = document.getElementById("title").value;
+      const description = document.getElementById("description").value;
+      const imageFile = document.getElementById("image").files[0];
+
+      if (!currentUser) {
+        alert("Önce giriş yapmalısın.");
+        return;
+      }
+
+      if (currentCategory === "") {
+        alert("Önce Mekanik veya Elektrik kategorisini seç.");
+        return;
+      }
+
+      if (title.trim() === "" || description.trim() === "") {
+        alert("Başlık ve açıklama boş olamaz.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("vehicle", vehicle);
+      formData.append("title", title);
+      formData.append("description", description);
+      formData.append("category", currentCategory);
+      formData.append("authorName", currentUser.fullName);
+      formData.append("authorService", currentUser.service);
+
+      if (imageFile) {
+        formData.append("image", imageFile);
+      }
+
+      const res = await fetch("/posts", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        alert(data.message || "Post eklenemedi.");
+        return;
+      }
+
+      document.getElementById("title").value = "";
+      document.getElementById("description").value = "";
+      document.getElementById("image").value = "";
+
+      await loadStats();
+      getPosts();
+    }
+
+    async function addComment(postId) {
+      const text = document.getElementById(`comment-${postId}`).value;
+
+      if (!currentUser) {
+        alert("Önce giriş yapmalısın.");
+        return;
+      }
+
+      if (text.trim() === "") {
+        alert("Yorum boş olamaz.");
+        return;
+      }
+
+      const res = await fetch(`/comment/${postId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          authorName: currentUser.fullName,
+          authorService: currentUser.service,
+          text: text
+        })
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        alert(data.message || "Yorum eklenemedi.");
+        return;
+      }
+
+      document.getElementById(`comment-${postId}`).value = "";
+      getPosts();
+    }
+
+    async function loadAdminUsers() {
+      const res = await fetch("/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: currentUser.username })
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        alert(data.message);
+        return;
+      }
+
+      let html = "";
+
+      data.users.forEach(user => {
+        html += `
+          <div class="admin-item">
+            <strong>${user.fullName}</strong><br>
+            ${user.username} - ${user.service}<br>
+            Admin: ${user.isAdmin ? "Evet" : "Hayır"}<br>
+            <button class="admin-btn" onclick="toggleAdmin('${user._id}')">
+              ${user.isAdmin ? "Admin Yetkisini Kaldır" : "Admin Yap"}
+            </button>
+          </div>
+        `;
+      });
+
+      document.getElementById("adminUsersList").innerHTML = html;
+    }
+
+    async function toggleAdmin(userId) {
+      const res = await fetch(`/admin/toggle-admin/${userId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: currentUser.username })
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        alert(data.message || "Yetki güncellenemedi.");
+        return;
+      }
+
+      loadAdminUsers();
+    }
+
+    async function loadAdminPosts() {
+      const res = await fetch("/admin/posts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: currentUser.username })
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        alert(data.message || "Postlar alınamadı.");
+        return;
+      }
+
+      let html = "";
+
+      data.posts.forEach(post => {
+        html += `
+          <div class="admin-item">
+            <strong>${post.vehicle} - ${post.title}</strong><br>
+            ${post.authorName} - ${post.authorService}<br>
+            <button class="delete-btn" onclick="deletePost('${post._id}')">Postu Sil</button>
+          </div>
+        `;
+      });
+
+      document.getElementById("adminPostsList").innerHTML = html;
+    }
+
+    async function deletePost(postId) {
+      const res = await fetch(`/admin/delete-post/${postId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: currentUser.username })
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        alert(data.message || "Post silinemedi.");
+        return;
+      }
+
+      await loadStats();
+      loadAdminPosts();
+      getPosts();
+    }
+  </script>
+</body>
+</html>

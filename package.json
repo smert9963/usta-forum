@@ -1,0 +1,14 @@
+{
+  "name": "mb-usta-forum",
+  "version": "1.0.0",
+  "description": "Mercedes araçları için teknik arıza paylaşım ve çözüm platformu",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "mongoose": "^8.18.0",
+    "multer": "^2.0.2"
+  }
+}
