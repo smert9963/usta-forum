@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MB Usta Forum</title>
+  <script src="/socket.io/socket.io.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Segoe UI", Arial, sans-serif; }
     body { background: linear-gradient(135deg, #050b16 0%, #0b1220 45%, #111827 100%); color: #f3f4f6; min-height: 100vh; }
@@ -42,14 +43,14 @@
     }
 
     input:focus, textarea:focus, select:focus {
-      border-color: #60a5fa;
-      box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15);
+      border-color: #00ADEF;
+      box-shadow: 0 0 0 3px rgba(0, 173, 239, 0.15);
     }
 
     textarea { min-height: 110px; resize: vertical; }
 
     button {
-      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+      background: linear-gradient(135deg, #00ADEF, #008fca);
       color: white;
       border: none;
       padding: 12px 18px;
@@ -58,10 +59,10 @@
       font-weight: 600;
       font-size: 14px;
       transition: 0.2s ease;
-      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.25);
+      box-shadow: 0 8px 18px rgba(0, 173, 239, 0.25);
     }
 
-    button:hover { transform: translateY(-1px); background: linear-gradient(135deg, #1e40af, #1d4ed8); }
+    button:hover { transform: translateY(-1px); background: linear-gradient(135deg, #0093cd, #0078aa); }
 
     .secondary-btn { background: linear-gradient(135deg, #334155, #475569); box-shadow: none; margin-top: 10px; }
     .secondary-btn:hover { background: linear-gradient(135deg, #475569, #64748b); }
@@ -128,7 +129,7 @@
     .right-panel { border-left: 1px solid #1e293b; }
     .main-panel { padding: 28px; overflow-y: auto; background: rgba(8, 15, 29, 0.55); }
 
-    .logo { font-size: 22px; font-weight: 700; margin-bottom: 24px; color: #60a5fa; }
+    .logo { font-size: 22px; font-weight: 700; margin-bottom: 24px; color: #00ADEF; }
     .menu-title { margin-top: 16px; margin-bottom: 12px; font-size: 15px; color: #94a3b8; }
 
     .menu-button {
@@ -143,7 +144,7 @@
       box-shadow: none;
     }
 
-    .menu-button:hover { background: #2563eb; }
+    .menu-button:hover { background: #00ADEF; }
     .menu-button.active { background: linear-gradient(135deg, #0f766e, #14b8a6); }
 
     .panel-card {
@@ -472,8 +473,52 @@
   </div>
 
   <script>
+    const socket = io();
+
+    function escapeHtml(text) {
+      return String(text || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
     let currentCategory = "";
     let currentUser = null;
+
+    socket.on("newPost", (data) => {
+      alert("🔔 Yeni arıza paylaşıldı:\n" + data.vehicle + " - " + data.title);
+
+      if (document.getElementById("forumSection") && !document.getElementById("forumSection").classList.contains("hidden")) {
+        getPosts();
+        loadStats();
+      }
+    });
+
+    function restoreSession() {
+      const savedUser = localStorage.getItem("user");
+      if (!savedUser) return;
+
+      try {
+        currentUser = JSON.parse(savedUser);
+
+        document.getElementById("authSection").classList.add("hidden");
+        document.getElementById("forumSection").classList.remove("hidden");
+        document.getElementById("welcomeText").innerText =
+          "Hoş geldin, " + currentUser.fullName + "\n" + currentUser.service;
+
+        if (currentUser.isAdmin) {
+          document.getElementById("adminPanel").classList.remove("hidden");
+        } else {
+          document.getElementById("adminPanel").classList.add("hidden");
+        }
+
+        loadStats();
+      } catch (error) {
+        localStorage.removeItem("user");
+      }
+    }
 
     function toggleRegisterPassword() {
       const pass = document.getElementById("password");
@@ -557,6 +602,8 @@
 
       if (data.success) {
         currentUser = data.user;
+        localStorage.setItem("user", JSON.stringify(data.user));
+
         document.getElementById("authSection").classList.add("hidden");
         document.getElementById("forumSection").classList.remove("hidden");
         document.getElementById("welcomeText").innerText =
@@ -588,6 +635,7 @@
     }
 
     function logoutUser() {
+      localStorage.removeItem("user");
       currentUser = null;
       currentCategory = "";
       document.getElementById("forumSection").classList.add("hidden");
@@ -632,8 +680,8 @@
       solvedPosts.forEach(post => {
         html += `
           <div class="recent-solved-item">
-            <div class="recent-solved-title">${post.vehicle} - ${post.title}</div>
-            <div class="recent-solved-meta">${post.authorName} - ${post.authorService}</div>
+            <div class="recent-solved-title">${escapeHtml(post.vehicle)} - ${escapeHtml(post.title)}</div>
+            <div class="recent-solved-meta">${escapeHtml(post.authorName)} - ${escapeHtml(post.authorService)}</div>
           </div>
         `;
       });
@@ -664,7 +712,7 @@
     }
 
     async function getPosts() {
-      const res = await fetch("/posts");
+      const res = await fetch("/posts?limit=50");
       const data = await res.json();
 
       showRecentSolved(data);
@@ -700,8 +748,8 @@
             post.comments.forEach(comment => {
               commentsHtml += `
                 <div class="comment-item">
-                  <div class="comment-author">${comment.authorName} - ${comment.authorService}</div>
-                  <div class="comment-text">${comment.text}</div>
+                  <div class="comment-author">${escapeHtml(comment.authorName)} - ${escapeHtml(comment.authorService)}</div>
+                  <div class="comment-text">${escapeHtml(comment.text)}</div>
                 </div>
               `;
             });
@@ -726,9 +774,9 @@
           html += `
             <div class="post-card">
               ${solvedHtml}
-              <h3 class="post-title">${post.vehicle} - ${post.title}</h3>
-              <p class="post-meta"><strong>Yazan:</strong> ${post.authorName} - ${post.authorService}</p>
-              <p class="post-description">${post.description}</p>
+              <h3 class="post-title">${escapeHtml(post.vehicle)} - ${escapeHtml(post.title)}</h3>
+              <p class="post-meta"><strong>Yazan:</strong> ${escapeHtml(post.authorName)} - ${escapeHtml(post.authorService)}</p>
+              <p class="post-description">${escapeHtml(post.description)}</p>
               ${imageHtml}
               ${solveButtonHtml}
 
@@ -854,14 +902,18 @@
       let html = "";
 
       data.users.forEach(user => {
+        const isSelf = currentUser && currentUser._id === user._id;
+
         html += `
           <div class="admin-item">
-            <strong>${user.fullName}</strong><br>
-            ${user.username} - ${user.service}<br>
+            <strong>${escapeHtml(user.fullName)}</strong><br>
+            ${escapeHtml(user.username)} - ${escapeHtml(user.service)}<br>
+            Şehir: ${escapeHtml(user.city || "-")}<br>
             Admin: ${user.isAdmin ? "Evet" : "Hayır"}<br>
             <button class="admin-btn" onclick="toggleAdmin('${user._id}')">
               ${user.isAdmin ? "Admin Yetkisini Kaldır" : "Admin Yap"}
             </button>
+            ${!isSelf ? `<button class="delete-btn" onclick="deleteUser('${user._id}')">Kullanıcı Sil</button>` : ""}
           </div>
         `;
       });
@@ -886,6 +938,27 @@
       loadAdminUsers();
     }
 
+    async function deleteUser(userId) {
+      const ok = confirm("Bu kullanıcıyı silmek istediğine emin misin?");
+      if (!ok) return;
+
+      const res = await fetch(`/admin/delete-user/${userId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: currentUser.username })
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        alert(data.message || "Kullanıcı silinemedi.");
+        return;
+      }
+
+      await loadStats();
+      loadAdminUsers();
+    }
+
     async function loadAdminPosts() {
       const res = await fetch("/admin/posts", {
         method: "POST",
@@ -905,8 +978,8 @@
       data.posts.forEach(post => {
         html += `
           <div class="admin-item">
-            <strong>${post.vehicle} - ${post.title}</strong><br>
-            ${post.authorName} - ${post.authorService}<br>
+            <strong>${escapeHtml(post.vehicle)} - ${escapeHtml(post.title)}</strong><br>
+            ${escapeHtml(post.authorName)} - ${escapeHtml(post.authorService)}<br>
             <button class="delete-btn" onclick="deletePost('${post._id}')">Postu Sil</button>
           </div>
         `;
@@ -933,6 +1006,8 @@
       loadAdminPosts();
       getPosts();
     }
+
+    restoreSession();
   </script>
 </body>
 </html>
