@@ -3,8 +3,14 @@ const mongoose = require("mongoose");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const bcrypt = require("bcrypt");
+const http = require("http");
+const { Server } = require("socket.io");
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
+
 const PORT = process.env.PORT || 3000;
 const MONGODB_URI =
   process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/mercedes_forum";
@@ -43,12 +49,25 @@ const storage = multer.diskStorage({
   },
   filename: function (req, file, cb) {
     const uniqueName =
-      Date.now() + "-" + Math.round(Math.random() * 1e9) + path.extname(file.originalname);
+      Date.now() +
+      "-" +
+      Math.round(Math.random() * 1e9) +
+      path.extname(file.originalname);
     cb(null, uniqueName);
   }
 });
 
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: function (req, file, cb) {
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowed.includes(file.mimetype)) {
+      return cb(new Error("Sadece JPG, PNG veya WEBP yüklenebilir."));
+    }
+    cb(null, true);
+  }
+});
 
 /* =========================
    SCHEMAS
@@ -83,10 +102,15 @@ const postSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+postSchema.index({ category: 1 });
+postSchema.index({ vehicle: 1 });
+postSchema.index({ createdAt: -1 });
+postSchema.index({ solved: 1 });
+
 const userSchema = new mongoose.Schema(
   {
     fullName: String,
-    username: { type: String, unique: true },
+    username: { type: String, unique: true, required: true },
     password: String,
     service: String,
     city: String,
@@ -97,6 +121,8 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+userSchema.index({ username: 1 }, { unique: true });
 
 const Post = mongoose.model("Post", postSchema);
 const User = mongoose.model("User", userSchema);
@@ -134,7 +160,9 @@ app.post("/register", async (req, res) => {
       });
     }
 
-    const existingUser = await User.findOne({ username: username.trim() });
+    const cleanUsername = username.trim();
+
+    const existingUser = await User.findOne({ username: cleanUsername });
 
     if (existingUser) {
       return res.json({
@@ -143,10 +171,12 @@ app.post("/register", async (req, res) => {
       });
     }
 
+    const hashedPassword = await bcrypt.hash(password.trim(), 10);
+
     const newUser = new User({
       fullName: fullName.trim(),
-      username: username.trim(),
-      password: password.trim(),
+      username: cleanUsername,
+      password: hashedPassword,
       service: service.trim(),
       city: city.trim(),
       isAdmin: false
@@ -179,11 +209,19 @@ app.post("/login", async (req, res) => {
     }
 
     const user = await User.findOne({
-      username: username.trim(),
-      password: password.trim()
+      username: username.trim()
     });
 
     if (!user) {
+      return res.json({
+        success: false,
+        message: "Kullanıcı adı veya şifre yanlış."
+      });
+    }
+
+    const match = await bcrypt.compare(password.trim(), user.password);
+
+    if (!match) {
       return res.json({
         success: false,
         message: "Kullanıcı adı veya şifre yanlış."
@@ -239,7 +277,15 @@ app.get("/stats", async (req, res) => {
 ========================= */
 app.get("/posts", async (req, res) => {
   try {
-    const posts = await Post.find().sort({ createdAt: -1, _id: -1 });
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 50;
+    const skip = (page - 1) * limit;
+
+    const posts = await Post.find()
+      .sort({ createdAt: -1, _id: -1 })
+      .skip(skip)
+      .limit(limit);
+
     res.json(posts);
   } catch (error) {
     console.log("Posts get hata:", error);
@@ -261,7 +307,14 @@ app.post("/posts", upload.single("image"), async (req, res) => {
       authorService
     } = req.body;
 
-    if (!vehicle || !title || !description || !category || !authorName || !authorService) {
+    if (
+      !vehicle ||
+      !title ||
+      !description ||
+      !category ||
+      !authorName ||
+      !authorService
+    ) {
       return res.json({
         success: false,
         message: "Eksik bilgi var."
@@ -281,6 +334,14 @@ app.post("/posts", upload.single("image"), async (req, res) => {
     });
 
     await newPost.save();
+
+    io.emit("newPost", {
+      _id: newPost._id,
+      vehicle: newPost.vehicle,
+      title: newPost.title,
+      authorName: newPost.authorName,
+      authorService: newPost.authorService
+    });
 
     res.json({
       success: true,
@@ -395,7 +456,10 @@ app.post("/admin/users", async (req, res) => {
       });
     }
 
-    const users = await User.find({}, { password: 0 }).sort({ createdAt: -1, _id: -1 });
+    const users = await User.find({}, { password: 0 }).sort({
+      username: 1,
+      _id: 1
+    });
 
     res.json({
       success: true,
@@ -447,6 +511,49 @@ app.post("/admin/toggle-admin/:id", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Yetki güncellenemedi."
+    });
+  }
+});
+
+app.post("/admin/delete-user/:id", async (req, res) => {
+  try {
+    const { username } = req.body;
+    const { id } = req.params;
+
+    const adminUser = await getUserByUsername(username);
+
+    if (!adminUser || !adminUser.isAdmin) {
+      return res.json({
+        success: false,
+        message: "Yetkisiz işlem."
+      });
+    }
+
+    if (String(adminUser._id) === String(id)) {
+      return res.json({
+        success: false,
+        message: "Kendi hesabını silemezsin."
+      });
+    }
+
+    const deleted = await User.findByIdAndDelete(id);
+
+    if (!deleted) {
+      return res.json({
+        success: false,
+        message: "Kullanıcı bulunamadı."
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Kullanıcı silindi."
+    });
+  } catch (error) {
+    console.log("Delete user hata:", error);
+    res.status(500).json({
+      success: false,
+      message: "Kullanıcı silinemedi."
     });
   }
 });
@@ -521,6 +628,17 @@ app.post("/admin/delete-post/:id", async (req, res) => {
 });
 
 /* =========================
+   SOCKET
+========================= */
+io.on("connection", (socket) => {
+  console.log("Bir kullanıcı bağlandı:", socket.id);
+
+  socket.on("disconnect", () => {
+    console.log("Bir kullanıcı ayrıldı:", socket.id);
+  });
+});
+
+/* =========================
    DEFAULT ROUTE
 ========================= */
 app.get("/", (req, res) => {
@@ -530,6 +648,6 @@ app.get("/", (req, res) => {
 /* =========================
    SERVER
 ========================= */
-app.listen(PORT, "0.0.0.0", () => {
+server.listen(PORT, "0.0.0.0", () => {
   console.log(`Server çalışıyor: http://localhost:${PORT}`);
 });
