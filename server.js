@@ -378,13 +378,23 @@ app.post("/comment/:id", async (req, res) => {
       });
     }
 
-    post.comments.push({
+    const newComment = {
       authorName: authorName.trim(),
       authorService: authorService.trim(),
       text: text.trim()
-    });
+    };
 
+    post.comments.push(newComment);
     await post.save();
+
+    io.emit("newComment", {
+      postId: post._id,
+      postTitle: post.title,
+      vehicle: post.vehicle,
+      authorName: newComment.authorName,
+      authorService: newComment.authorService,
+      text: newComment.text
+    });
 
     res.json({
       success: true,
