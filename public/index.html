@@ -498,6 +498,20 @@
       }
     });
 
+    socket.on("newComment", (data) => {
+      if (!currentUser) return;
+
+      alert(
+        "💬 Yeni yorum yapıldı:\n" +
+        data.vehicle + " - " + data.postTitle +
+        "\nYazan: " + data.authorName
+      );
+
+      if (!document.getElementById("forumSection").classList.contains("hidden")) {
+        getPosts();
+      }
+    });
+
     function restoreSession() {
       const savedUser = localStorage.getItem("user");
       if (!savedUser) return;
