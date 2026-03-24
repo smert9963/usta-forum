@@ -488,9 +488,11 @@
     let currentUser = null;
 
     socket.on("newPost", (data) => {
+      if (!currentUser) return;
+
       alert("🔔 Yeni arıza paylaşıldı:\n" + data.vehicle + " - " + data.title);
 
-      if (document.getElementById("forumSection") && !document.getElementById("forumSection").classList.contains("hidden")) {
+      if (!document.getElementById("forumSection").classList.contains("hidden")) {
         getPosts();
         loadStats();
       }
